@@ -1,5 +1,11 @@
-
 Required packages (Python3):
+
+Ubuntu package names:
 * python3-gi
 * libkeybinder-3.0-0
 * gir1.2-keybinder-3.0
+
+Arch package names:
+* extra/libkeybinder3
+* extra/python-gobject
+* aur/python3-keybinder
