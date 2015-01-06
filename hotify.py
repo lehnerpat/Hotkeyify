@@ -77,7 +77,7 @@ def initSignal():
         GLib.idle_add(install_glib_handler, sig, priority=GLib.PRIORITY_HIGH)
 
 
-### util methods
+### Spotify interaction methods
 
 spotifyPID = None
 
@@ -133,14 +133,33 @@ def dbusSpotifyQuit():
     global mplayer_iface
     mplayer_iface.Quit()
 
+
+### Util methods
+
 def methodCallWrapper(keystr, user_data):
     user_data()
 
 
 ### Main Code
 
-initSignal()
-session_bus = dbus.SessionBus()
+##############################################################################
+# define here the key mappings you want for which actions
+#  the dict key is the glib keystring, which can be something like '<Ctrl><Alt>M';
+#  see https://developer.gnome.org/gtk3/stable/gtk3-Keyboard-Accelerators.html#gtk-accelerator-parse
+#  and https://git.gnome.org/browse/gtk+/tree/gdk/gdkkeysyms.h (symbolic names,
+#  leave out the leading 'GDK_KEY_')
+#  the value is the method (reference) from the spotify object above; currently
+#  only works with parameterless methods
+mappings = {
+    'XF86AudioPlay': dbusSpotifyPlayPause,
+    'XF86AudioNext': dbusSpotifyNext,
+    'XF86AudioPrev': dbusSpotifyPrev,
+    'XF86AudioStop': dbusSpotifyPause
+}
+##############################################################################
+
+
+initSignal() # set up signal handling (SIGINT, SIGTERM, etc)
 
 sp = None
 killSpotifyOnQuit = False
@@ -153,23 +172,19 @@ if not isSpotifyRunning():
     isSpotifyRunning()
     #print(spotifyPID)
 
-mplayer_iface = dbus.Interface(session_bus.get_object("org.mpris.MediaPlayer2.spotify", "/"), 'org.freedesktop.MediaPlayer2')
-
+# set up the periodic checker task to quit when spotify exits
 GLib.timeout_add_seconds(5, pidCheckingWrapper)
 
-# define here the key mappings you want for which actions
-#  the dict key is the glib keystring, which can me something like '<Ctrl><Alt>M';
-#  the value is the method (reference) from the spotify object above; currently
-#  only works with parameterless methods
-mappings = {
-    'XF86AudioPlay': dbusSpotifyPlayPause,
-    'XF86AudioNext': dbusSpotifyNext,
-    'XF86AudioPrev': dbusSpotifyPrev,
-    'XF86AudioStop': dbusSpotifyPause
-}
+# get DBus interface
+session_bus = dbus.SessionBus()
+mplayer_iface = dbus.Interface(session_bus.get_object("org.mpris.MediaPlayer2.spotify", "/"), 'org.freedesktop.MediaPlayer2')
 
+
+# bind the hotkeys defined above
 Keybinder.init()
 for k,v in mappings.items():
     Keybinder.bind(k, methodCallWrapper, v)
+
+# start the gtk main loop
 Gtk.main()
 
