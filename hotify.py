@@ -31,6 +31,10 @@ from gi.repository import GLib
 from gi.repository import Gtk 
 from gi.repository import Keybinder
 
+### Global values and variables
+
+SPOTIFY_EXECUTABLE = '/usr/bin/spotify'
+
 ### handling signals (SIGINT etc)
 
 # Handling signals (such as SIGINT, SIGTERM, ...) with Gtk seems to be a bit complicated.
@@ -165,7 +169,7 @@ sp = None
 killSpotifyOnQuit = False
 
 if not isSpotifyRunning():
-    sp = subprocess.Popen(['spotify'])
+    sp = subprocess.Popen([SPOTIFY_EXECUTABLE])
     killSpotifyOnQuit = True
     #spotifyPID = sp.pid
     time.sleep(1)
