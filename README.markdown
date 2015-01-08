@@ -40,7 +40,7 @@ No actual installation is required for normal use.
 
 To use Hotkeyify as a wrapper script, see the instructions further below.
 
-## Using Hotify
+## Using Hotkeyify
 
 Run the `hotkeyify.py` script (in a terminal or with your application launcher). It binds four media
 hotkey, which default to the following mappings:
@@ -50,7 +50,47 @@ hotkey, which default to the following mappings:
 * `XF86AudioNext` -> Next Track
 * `XF86AudioPrev` -> Previous Track
 
-When you exit Spotify, Hotkeyify will detect that and quit automatically.
+When you exit Spotify, Hotkeyify will detect that and quit automatically. If you launched Hotkeyify
+while Spotify was already running, terminating Hotkeyify (e.g. by sending it a SIGTERM or pressing
+`Ctrl+C` (SIGINT) when running in a terminal) will not quit Spotify.
+
+## Using Hotkeyify as a Wrapper Script
+
+If Spotify is not running when you launch Hotkeyify, the script automatically launches the Spotify
+client (without arguments). Additionally, the script will terminate Spotify (gracefully) when it
+quits.
+
+This allows you use Hotkeyify as a wrapper for Spotify, automatically registering the global hotkeys
+when you launch it, and unregistering them when Spotify exits.
+
+### Setting up Hotkeyify as a `spotify` replacement
+
+To conveniently use Hotkeyify as a Spotify wrapper, you can set up a (removable) replacement for the
+`spotify` executable in your `PATH`.
+
+The actual `spotify` executable is usually located in `/usr/bin` -- if it is somewhere else on your
+system, you need to tell Hotkeyify about it (see further below).
+
+1. Make sure you have a place in your `PATH` where you can put binaries that will shadow your system
+   binaries. For example, you can have a folder in your home folder, i.e. `~/bin`:
+    1. If you do not have such a folder, create it (`mkdir ~/bin`).
+    2. Make sure it is prepended to your `PATH` variable. To check, open a terminal, enter `echo $PATH`
+       and press Enter. If the printed list of folders does not include your custom `bin` folder first
+       (it is likedly expanded to the full form `/home/<username>/bin`, continue with step 1.3 below, 
+       otherwise continue to step 2.
+    3. Open the file `~/.profile` in a text editor (create it if it does not exist). Append the 
+       following line:  
+       `PATH=$HOME/bin:$PATH`  
+       Save the file and exit your editor. You may have to log out and back in (or reboot) to apply
+       this change.
+
+2. Create a symbolic link to `hotkeyify.py` named `spotify`. We assume here that you placed Hotkeyify 
+   in the folder `~/Hotkeyify`; if you placed it somewhere else, simply use the full path to 
+   `hotkeyify.py` in the command below:  
+   `ln -s ~/Hotkeyify/hotkeyify.py ~/bin/spotify`
+
+Now you're good to go! Whenever you now run `spotify` (from your terminal, command runner or
+application launcher), Hotkeyify is launched automatically along with Spotify.
 
 
 ## License
