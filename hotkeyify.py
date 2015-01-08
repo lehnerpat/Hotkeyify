@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 Copyright (c) 2014, Patrick Lehner <lehner (dot) patrick (at) gmx (dot) de>
 
@@ -16,6 +17,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 """
 
+
+### Imports
+
 import dbus
 import os
 import signal
@@ -31,17 +35,23 @@ from gi.repository import GLib
 from gi.repository import Gtk 
 from gi.repository import Keybinder
 
+
 ### Global values and variables
 
 SPOTIFY_EXECUTABLE = '/usr/bin/spotify'
+SPOTIFY_PID_CHECKING_PERIOD = 5
+
 
 ### handling signals (SIGINT etc)
 
 # Handling signals (such as SIGINT, SIGTERM, ...) with Gtk seems to be a bit complicated.
-#   Thankfully, the following setup function is provided at http://stackoverflow.com/a/26457317/1761499
+#   Thankfully, a working setup function is provided at http://stackoverflow.com/a/26457317/1761499
+#   This version is based on the function presented in the SO answer.
 def initSignal():
+    SIGS = [signal.SIGINT, signal.SIGTERM, signal.SIGHUP]
+
     def signal_action(signal):
-        if signal in [1,2,15]:
+        if signal in SIGS:
             global killSpotifyOnQuit
             if killSpotifyOnQuit and isSpotifyRunning():
                 dbusSpotifyQuit() # ask spotify nicely to quit
@@ -74,8 +84,7 @@ def initSignal():
         else:
             print("Can't install GLib signal handler, too old gi.")
 
-    SIGS = [getattr(signal, s, None) for s in "SIGINT SIGTERM SIGHUP".split()]
-    for sig in filter(None, SIGS):
+    for sig in SIGS:
         #print("Register Python signal handler: %r" % sig)
         signal.signal(sig, idle_handler)
         GLib.idle_add(install_glib_handler, sig, priority=GLib.PRIORITY_HIGH)
@@ -106,6 +115,8 @@ def checkIfPIDStillRunning(pid):
     except IOError:
         return False
 
+# a wrapper function for the PID checking function above, so it can be easily invoked as a generic
+# callback in gtk
 def pidCheckingWrapper(*args, **kwargs):
     global spotifyPID
     #print("checking...")
@@ -165,19 +176,19 @@ mappings = {
 
 initSignal() # set up signal handling (SIGINT, SIGTERM, etc)
 
-sp = None
 killSpotifyOnQuit = False
 
 if not isSpotifyRunning():
-    sp = subprocess.Popen([SPOTIFY_EXECUTABLE])
+    # launch spotify and do not wait for it
+    subprocess.Popen([SPOTIFY_EXECUTABLE])
+    # TODO: pass unprocessed command line arguments to spotify (specifically, files/URLs passed)
     killSpotifyOnQuit = True
-    #spotifyPID = sp.pid
-    time.sleep(1)
-    isSpotifyRunning()
+    time.sleep(1) # give it some time to start up
+    isSpotifyRunning() # retrieve spotify's PID to keep an eye on it
     #print(spotifyPID)
 
 # set up the periodic checker task to quit when spotify exits
-GLib.timeout_add_seconds(5, pidCheckingWrapper)
+GLib.timeout_add_seconds(SPOTIFY_PID_CHECKING_PERIOD, pidCheckingWrapper)
 
 # get DBus interface
 session_bus = dbus.SessionBus()
@@ -188,6 +199,7 @@ mplayer_iface = dbus.Interface(session_bus.get_object("org.mpris.MediaPlayer2.sp
 Keybinder.init()
 for k,v in mappings.items():
     Keybinder.bind(k, methodCallWrapper, v)
+# these keybindings are automatically removed by Keybinder when the script exits
 
 # start the gtk main loop
 Gtk.main()
